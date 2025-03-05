@@ -1,0 +1,6 @@
+# Размеры поля
+
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
+
+LOGO_HEIGHT = 200
