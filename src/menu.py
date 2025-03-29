@@ -7,15 +7,15 @@ class MainMenu:
         self.buttons = []
         self.screen_width = screen_width
         self.screen_height = screen_height
-        self.font = pygame.font.Font(None, 36)
+        self.font = pygame.font.Font(None, 50)
         self.create_buttons()
 
     
     def create_buttons(self):
-        button_width = 250
-        button_height = 50
+        button_width = 500
+        button_height = 100
         spacing = 20
-        start_height = (self.screen_height-src.constans.LOGO_HEIGHT-button_height)
+        start_height = (self.screen_height-src.constans.LOGO_HEIGHT-3*button_height)
 
         start_button = Button(
             text="Играть",
@@ -37,19 +37,19 @@ class MainMenu:
 
         settings_button = Button(
             text="Настройки",
-            position=((self.screen_width-button_width)//2 -2, start_height+ 2*(button_height+spacing)),
-            size=(button_width//2-(spacing//2)+2,button_height),
+            position=((self.screen_width-button_width)//2, start_height+ 2*(button_height+spacing)),
+            size=(button_width,button_height),
             color=(128, 128, 128),
-            font=pygame.font.Font(None, 34)
+            font=self.font
         )
         self.buttons.append(("Settings", settings_button))
 
         quit_button = Button(
             text="Выход",
-            position=((self.screen_width-button_width)//2 + button_width//2+(spacing//2)-2, start_height+ 2*(button_height+spacing)),
-            size=(button_width//2-(spacing//2)+2,button_height),
+            position=((self.screen_width-button_width)//2, start_height+ 3*(button_height+spacing)),
+            size=(button_width,button_height),
             color=(128, 128, 128),
-            font=pygame.font.Font(None, 34)
+            font=self.font
         )
         self.buttons.append(("Quit", quit_button))
 
@@ -68,10 +68,12 @@ class MainMenu:
     
     def draw(self, screen):
         screen.fill((25, 25, 112))
-        title_font = pygame.font.Font(None, 72)
-        title_surface = title_font.render("Minesweeper", True, (255, 255, 255))
-        title_rect = title_surface.get_rect(center=(400, 100))
-        screen.blit(title_surface, title_rect)
+        #title_font = pygame.font.Font(None, 72)
+        #title_surface = title_font.render("Minesweeper", True, (255, 255, 255))
+        #title_rect = title_surface.get_rect(center=(self.screen_width//2, self.screen_height//4))
+        image = pygame.image.load("assets/pngwing.png")
+        image_rect = image.get_rect(center=(self.screen_width//2, self.screen_height//3.5))  # Центрирование
+        screen.blit(image, image_rect)
 
         for _, button in self.buttons:
             button.draw(screen)
