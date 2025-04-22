@@ -37,7 +37,10 @@ def main():
                     current_screen = "game"
                     waiting_for_click = False
                 elif action == "Quit":
+                    current_screen = "settings"
+                elif action == "Quit":
                     running = False
+                
 
             # Игровой экран
             elif current_screen == "game" and game:
@@ -59,6 +62,8 @@ def main():
             if not game.time_stop:
                 game.update_timer()
             game.draw(screen)
+        elif current_screen == "settings":
+            pass
             
 
         pygame.display.flip()
