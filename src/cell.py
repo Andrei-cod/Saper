@@ -19,7 +19,8 @@ class Cell:
         self.is_mine = is_mine
         self.mine_around = 0
         self.state = "closed"  # closed, flagged, opened
-        self.rect = pygame.Rect(x * size, y * size, size, size)
+        self.rect = pygame.Rect(x * size+1, y * size+1, size-2, size-2)
+        self.border = pygame.Rect(x * size, y * size, size, size)
         
         # Загрузка изображений
         self.image_closed = pygame.image.load(os.path.join('assets', 'image1.png')).convert_alpha()
@@ -37,11 +38,7 @@ class Cell:
         elif self.state == "flagged":
             screen.blit(self.image_flagged, self.rect)
         elif self.state == "opened":
-            if self.is_mine:
-                # Отрисовка мины (если нужно)
-                pass
-            else:
-                # Отрисовка числа мин вокруг
+            if not self.is_mine:
                 if self.mine_around > 0:
                     # Здесь нужно отрисовать число (можно использовать pygame.font)
                     font = pygame.font.SysFont(None, 30)
@@ -49,7 +46,8 @@ class Cell:
                     screen.blit(text, (self.rect.x + self.size//2 - 5, self.rect.y + self.size//2 - 5))
                 else:
                     # Пустая открытая клетка
-                    pygame.draw.rect(screen, (200, 200, 200), self.rect)
+                    pygame.draw.rect(screen, (250, 250, 250), self.border)
+                    pygame.draw.rect(screen, (150, 150, 150), self.rect)
 
     def handle_click(self, mouse_button):
         """
@@ -75,4 +73,7 @@ class Cell:
         # Загрузка соответствующего изображения для открытой клетки
         if count > 0:
             self.image_opened = pygame.image.load(os.path.join('assets', f'mine_around_{count}.png')).convert_alpha()
-            self.image_opened = pygame.transform.scale(self.image_opened, (self.size, self.size))
+            self.image_opened = pygame.transform.scale(self.image_opened, (40,40))
+    
+    def get_position(self):
+        return (self.x, self.y)
