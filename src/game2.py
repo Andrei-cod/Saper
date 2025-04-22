@@ -21,7 +21,8 @@ class Game:
         self.game_start_time = 0
         self.pause_start_time = 0
         self.paused_duration = 0
-        
+        self.view_time = 0
+        self.time_stop = True
 
         # Позиционирование поля
         self.start_x = WINDOW_WIDTH//CELL_SIZE//2 - self.width//2
@@ -60,10 +61,11 @@ class Game:
         )
 
     def start_game_timer(self):
-        """Запуск таймера при начале игры"""
+        """Запуск таймера"""
         self.game_start_time = pygame.time.get_ticks()
         self.paused_duration = 0
         self.pause_start_time = 0
+        self.time_stop = False
 
     def update_timer(self):
         """Обновление состояния таймера с учётом пауз"""
@@ -77,6 +79,7 @@ class Game:
             if self.pause_start_time > 0:  # Пауза только закончилась
                 self.paused_duration += pygame.time.get_ticks() - self.pause_start_time
                 self.pause_start_time = 0
+        self.view_time = self.get_elapsed_time()
 
     def get_elapsed_time(self):
         """Получение игрового времени в секундах (без учёта пауз)"""
@@ -87,9 +90,10 @@ class Game:
         if self.paused:
             return (self.pause_start_time - self.game_start_time - self.paused_duration) // 1000
         return (current_time - self.game_start_time - self.paused_duration) // 1000
+    
     def draw_timer(self, screen):
         """Orpucoaxa raймера в формате MM,SS"""
-        elapsed = self.get_elapsed_time()
+        elapsed = self.view_time
         time_text = f"{elapsed // 60:02d},{elapsed % 60:02d}"
         font = pygame.font.SysFont("Arial", 36)
         timer_surface = font.render(time_text, True, (0, 0, 0))
@@ -180,16 +184,19 @@ class Game:
                 if cell.is_mine:
                     self.game_over = True
                     self.reveal_all_mines()
+                    self.time_stop = True
                     return "game_over"
                 self.open_cell(x, y)
                 if self.check_win():
                     self.game_won = True
                     self.flag_all_mines()
+                    self.time_stop = True
                     return "game_won"
             elif cell.state == "opened" and cell.mine_around > 0:
                 if not self.open_surrounding(x, y):
                     self.game_over = True
                     self.reveal_all_mines()
+                    self.time_stop = True
                     return "game_over"
         elif mouse_button == 3:
             if cell.state == "closed":
@@ -200,6 +207,7 @@ class Game:
             if self.check_win():
                 self.game_won = True
                 self.flag_all_mines()
+                self.time_stop = True
                 return "game_won"
 
         return None

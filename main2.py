@@ -41,7 +41,6 @@ def main():
 
             # Игровой экран
             elif current_screen == "game" and game:
-                game.update_timer()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if waiting_for_click:
                         current_screen = "menu"
@@ -57,7 +56,10 @@ def main():
         if current_screen == "menu":
             menu.draw(screen)
         elif current_screen == "game" and game:
+            if not game.time_stop:
+                game.update_timer()
             game.draw(screen)
+            
 
         pygame.display.flip()
         clock.tick(60)  # 60 FPS
