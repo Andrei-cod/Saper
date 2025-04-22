@@ -4,6 +4,8 @@ from src.game import Game
 from src.constants import *
 from src.settings import width, height, mines
 
+
+
 def main():
     pygame.init() 
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -14,6 +16,7 @@ def main():
     current_screen = "menu"
     menu = MainMenu(WINDOW_WIDTH, WINDOW_HEIGHT)
     game = None
+    game_result = None  # Хранит результат игры ("game_over" или "game_won")
 
     running = True
     while running: 
@@ -23,44 +26,48 @@ def main():
             if event.type == pygame.QUIT: 
                 running = False
             
+            # Обработка клика при отображении результата игры
+            if game_result and event.type == pygame.MOUSEBUTTONDOWN:
+                game_result = None
+                current_screen = "menu"
+                continue
+            
             # Обработка событий меню
             if current_screen == "menu":
                 action = menu.handle_event(event)
                 if action == "Start Game":
-                    game = Game(width, height, mines)  # Создаем новую игру 10x10 с 15 минами
+                    game = Game(width, height, mines)
                     current_screen = "game"
+                    game_result = None
                 elif action == "Quit":
                     running = False
             
             # Обработка событий игры
-            elif current_screen == "game" and game:
+            elif current_screen == "game" and game and not game_result:
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    # Получаем координаты клетки
-                    start_x = WINDOW_WIDTH//CELL_SIZE//2 - width//2
-                    start_y = WINDOW_HEIGHT//CELL_SIZE//2 - height//2
-                    cell_size = CELL_SIZE
-                    cell_x = mouse_pos[0] // cell_size
-                    cell_y = mouse_pos[1] // cell_size
+                    # Преобразуем экранные координаты в координаты клетки
+                    cell_x = (mouse_pos[0] - game.start_x * CELL_SIZE) // CELL_SIZE
+                    cell_y = (mouse_pos[1] - game.start_y * CELL_SIZE) // CELL_SIZE
                     
                     # Проверяем что клик внутри поля
-                    if start_x <= cell_x < start_x + width and start_y <= cell_y < start_y + height:
-                        if event.button == 1:  # ЛКМ
-                            result = game.handle_click(cell_x, cell_y, event.button)
-                            if result == "Kaboom":
-                                print("Вы проиграли!")
-                                current_screen = "menu"
-                        elif event.button == 3:  # ПКМ
-                            game.handle_click(cell_x, cell_y, event.button)
-                if game.mines_count == 0:
-                    current_screen = "Win"
+                    if 0 <= cell_x < width and 0 <= cell_y < height:
+                        result = game.handle_click(mouse_pos[0], mouse_pos[1], event.button)
+                        if result in ("game_over", "game_won"):
+                            game_result = result
 
         # Отрисовка
         screen.fill((228, 194, 159))
         
         if current_screen == "menu":
             menu.draw(screen)
-        elif current_screen == "game" and game:
-            game.draw(screen)
+        elif current_screen == "game":
+            if game:
+                game.draw(screen)
+                # Отрисовка прозрачного экрана
+                if game_result == "game_over":
+                    game.draw_message(screen, "Вы проиграли!")
+                elif game_result == "game_won":
+                    game.draw_message(screen, "Вы победили!")
 
         pygame.display.flip()
         clock.tick(60)

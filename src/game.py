@@ -6,6 +6,7 @@ from src.constants import WINDOW_HEIGHT, WINDOW_WIDTH, CELL_SIZE
 
 class Game:
     def __init__(self, width=10, height=10, mines_count=15):
+        """Инициализация игры"""
         self.width = width
         self.height = height
         self.mines_count = mines_count
@@ -13,13 +14,14 @@ class Game:
         self.mines_positions = []
         self.first_click = True
         self.game_over = False
+        self.game_won = False
+        # Центрирование игрового поля
         self.start_x = WINDOW_WIDTH//CELL_SIZE//2 - self.width//2
         self.start_y = WINDOW_HEIGHT//CELL_SIZE//2 - self.height//2
         self.init_cells()
-        
 
     def init_cells(self):
-        """Инициализация всех клеток"""
+        """Создание сетки клеток"""
         self.cells = [
             [Cell(self.start_x + x, self.start_y + y, CELL_SIZE) 
             for x in range(self.width)] 
@@ -27,162 +29,199 @@ class Game:
         ]
 
     def generate_mines(self, exclude_x, exclude_y):
-        """Генерация мин с очисткой предыдущих и исключением:
-        - зоны первого клика (3x3 клетки)
-        - уже открытых клеток
-        """
-        # Очищаем все существующие мины
-        '''for y in range(self.height):
+        """Генерация мин с безопасной зоной вокруг первого клика"""
+        # Очистка предыдущих мин
+        for y in range(self.height):
             for x in range(self.width):
-                self.cells[x][y].is_mine = False'''
+                self.cells[y][x].is_mine = False
         
-        # Собираем все возможные позиции
-        all_positions = [
-            (x, y) 
-            for x in range(self.width)
-            for y in range(self.height)
-        ]
+        # Подготовка позиций
+        all_positions = [(x, y) for x in range(self.width) for y in range(self.height)]
         
-        # Запрещенные позиции:
+        # Исключаем зону 3x3 вокруг первого клика
         forbidden = set()
-        
-        # Исключаем зону 3x4 вокруг первого клика
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
                 nx, ny = exclude_x + dx, exclude_y + dy
                 if 0 <= nx < self.width and 0 <= ny < self.height:
                     forbidden.add((nx, ny))
         
-        # Исключаем уже открытые клетки
-        for y in range(self.height):
-            for x in range(self.width):
-                if self.cells[x][y].state == "opened":
-                    forbidden.add((x, y))
-        
-        # Отбираем только разрешенные позиции
+        # Выбираем случайные позиции для мин
         valid_positions = [pos for pos in all_positions if pos not in forbidden]
-        
-        # Проверяем, что мин не больше чем доступных клеток
         mines_to_place = min(self.mines_count, len(valid_positions))
-        
-        # Случайно выбираем позиции для мин
         random.shuffle(valid_positions)
         self.mines_positions = valid_positions[:mines_to_place]
         
-        # Расставляем новые мины
+        # Устанавливаем мины
         for x, y in self.mines_positions:
-            self.cells[x][y].is_mine = True
+            self.cells[y][x].is_mine = True
         
-        # Обновляем счетчики мин
         self.update_mines_count()
 
     def update_mines_count(self):
-        """Обновляет количество мин вокруг каждой клетки"""
-        for x in range(self.width):
-            for y in range(self.height):
-                if not self.cells[x][y].is_mine:
+        """Подсчет мин вокруг каждой клетки"""
+        for y in range(self.height):
+            for x in range(self.width):
+                if not self.cells[y][x].is_mine:
                     count = 0
                     for dy in [-1, 0, 1]:
                         for dx in [-1, 0, 1]:
                             nx, ny = x + dx, y + dy
                             if (0 <= nx < self.width and 0 <= ny < self.height 
-                                and self.cells[nx][ny].is_mine):
+                                and self.cells[ny][nx].is_mine):
                                 count += 1
-                    self.cells[x][y].mine_around = count
+                    self.cells[y][x].mine_around = count
 
-    def handle_click(self, x, y, mouse_button):
-        """Обрабатывает клик по клетке"""
-        if self.game_over:
+    def handle_click(self, mouse_x, mouse_y, mouse_button):
+        """Обработка кликов мыши"""
+        if self.game_over or self.game_won:
             return None
-        x -= self.start_x
-        y -= self.start_y
+            
+        # Преобразование координат
+        x = (mouse_x - self.start_x * CELL_SIZE) // CELL_SIZE
+        y = (mouse_y - self.start_y * CELL_SIZE) // CELL_SIZE
+        
+        if not (0 <= x < self.width and 0 <= y < self.height):
+            return None
+            
+        cell = self.cells[y][x]
 
-        cell = self.cells[x][y]
-
-        # Первый клик - всегда открытие
+        # Первый клик
         if self.first_click:
             self.generate_mines(x, y)
             self.first_click = False
             self.open_cell(x, y)
             return None
 
-        # ЛКМ - только по открытым клеткам
-        if mouse_button == 1 and cell.state == "opened":
-            if not self.open_surrounding(x, y):  # Если есть неотмеченные мины
-                return "Kaboom"  # Игра окончена
-        
-        # ПКМ - переключение флажков
+        # Левый клик
+        if mouse_button == 1:
+            if cell.state == "closed":
+                if cell.is_mine:
+                    self.game_over = True
+                    return "game_over"
+                self.open_cell(x, y)
+                if self.check_win():
+                    self.game_won = True
+                    return "game_won"
+            elif cell.state == "opened" and cell.mine_around > 0:
+                if not self.open_surrounding(x, y):
+                    self.game_over = True
+                    return "game_over"
+                if self.check_win():
+                    self.game_won = True
+                    return "game_won"
+
+        # Правый клик
         elif mouse_button == 3:
-            if cell.state == "closed" and cell.is_mine:
+            if cell.state == "closed":
                 cell.state = "flagged"
-                self.mines_count -= 1
-            elif cell.state == "flagged" and cell.is_mine:
+            elif cell.state == "flagged":
                 cell.state = "closed"
-                self.mines_count += 1
         
         return None
 
     def open_surrounding(self, x, y):
-        """Открывает соседей в радиусе 1, возвращает False если есть неотмеченные мины"""
-        mines_around = 0
-        flagged_around = 0
-        positions = []
+        """Открытие соседних клеток"""
+        mines_around = flagged_around = 0
         
-        # Сначала проверяем соседей
+        # Подсчет мин и флагов вокруг
         for dy in [-1, 0, 1]:
             for dx in [-1, 0, 1]:
                 if dx == 0 and dy == 0:
-                    continue  
-                
+                    continue
                 nx, ny = x + dx, y + dy
                 if 0 <= nx < self.width and 0 <= ny < self.height:
                     neighbor = self.cells[ny][nx]
-                    positions.append((nx, ny))
                     if neighbor.is_mine:
                         mines_around += 1
                         if neighbor.state == "flagged":
                             flagged_around += 1
         
-        # Если есть неотмеченные мины - взрыв
         if mines_around > flagged_around:
-            for nx, ny in positions:
-                if self.cells[ny][nx].is_mine and self.cells[ny][nx].state != "flagged":
-                    self.game_over = True
-                    return False
+            return False
         
-        # Открываем все неотмеченные соседи
-        for nx, ny in positions:
-            neighbor = self.cells[ny][nx]
-            if neighbor.state == "closed":
-                self.open_cell(nx, ny)
+        # Открытие соседей
+        for dy in [-1, 0, 1]:
+            for dx in [-1, 0, 1]:
+                if dx == 0 and dy == 0:
+                    continue
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < self.width and 0 <= ny < self.height:
+                    self.open_cell(nx, ny)
         
         return True
 
     def open_cell(self, x, y):
-        """Открывает клетку и соседей (если пустые)"""
-        if (not 0 <= x < self.width or not 0 <= y < self.height or
-            self.cells[x][y].state != "closed"):
+        """Рекурсивное открытие клеток"""
+        if not (0 <= x < self.width and 0 <= y < self.height):
             return
-
-        self.cells[x][y].state = "opened"
-
-        # Если пустая клетка - открываем соседей
-        if self.cells[x][y].mine_around == 0:
+            
+        cell = self.cells[y][x]
+        if cell.state != "closed":
+            return
+            
+        cell.state = "opened"
+        
+        if cell.mine_around == 0:
             for dy in [-1, 0, 1]:
                 for dx in [-1, 0, 1]:
-                    if dx != 0 or dy != 0:  # Не проверяем текущую клетку
+                    if dx != 0 or dy != 0:
                         self.open_cell(x + dx, y + dy)
 
+    def check_win(self):
+        """Проверка условий победы"""
+        for y in range(self.height):
+            for x in range(self.width):
+                cell = self.cells[y][x]
+                if not cell.is_mine and cell.state != "opened":
+                    return False
+        return True
+
+    def draw_mines_counter(self, screen):
+        """Отрисовка счетчика мин"""
+        flagged = sum(1 for row in self.cells for cell in row if cell.state == "flagged")
+        mines_left = max(0, self.mines_count - flagged)
+        
+        font = pygame.font.SysFont("Arial", 36)
+        text = font.render(f"{mines_left}/{self.mines_count}", True, (0, 0, 0))
+        text_rect = text.get_rect(center=(WINDOW_WIDTH//2, 30))
+        screen.blit(text, text_rect)
+
     def draw(self, screen):
-        """Отрисовывает игровое поле"""
+        """Отрисовка игрового поля"""
+        # Клетки
         for row in self.cells:
             for cell in row:
                 cell.draw(screen)
-        pause = Button(
-            position=(WINDOW_WIDTH-40-2,0+2),
-            size=(40,40),
+        
+        # Счетчик мин
+        self.draw_mines_counter(screen)
+        
+        # Кнопка паузы
+        pause_button = Button(
+            position=(WINDOW_WIDTH-40-2, 2),
+            size=(40, 40),
             color=(228, 194, 159),
-            image=pygame.image.load("assets/pause.png"))
-        border = pygame.Rect((WINDOW_WIDTH-44,0), (44,44))
+            image=pygame.image.load("assets/pause.png")
+        )
+        border = pygame.Rect(WINDOW_WIDTH-44, 0, 44, 44)
         pygame.draw.rect(screen, (128, 128, 128), border)
-        pause.draw(screen)
+        pause_button.draw(screen)
+    def draw_message(self, screen, message):
+        """Отрисовывает сообщение поверх текущего экрана"""
+        # Полупрозрачный фон для сообщения
+        overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((228, 194, 159, 200))  # Прозрачный цвет фона
+        screen.blit(overlay, (0, 0))
+        
+        # Основной текст
+        font_large = pygame.font.SysFont("Arial", 72, bold=True)
+        text = font_large.render(message, True, (0, 0, 0))
+        text_rect = text.get_rect(center=(WINDOW_WIDTH//2, WINDOW_HEIGHT//2 - 50))
+        screen.blit(text, text_rect)
+        
+        # Подсказка
+        font_small = pygame.font.SysFont("Arial", 36)
+        hint = font_small.render("Нажмите чтобы продолжить", True, (0, 0, 0))
+        hint_rect = hint.get_rect(center=(WINDOW_WIDTH//2, WINDOW_HEIGHT//2 + 50))
+        screen.blit(hint, hint_rect)
