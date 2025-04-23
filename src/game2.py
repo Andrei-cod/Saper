@@ -31,6 +31,7 @@ class Game:
         self.init_cells()
         self.init_pause_ui()
 
+    # Инициализация
     def init_cells(self):
         """Создание сетки клеток"""
         self.cells = [
@@ -60,6 +61,19 @@ class Game:
             font=pygame.font.SysFont("Arial", 28)
         )
 
+    def init_won_ui(self):
+        button_width, button_height = 200, 50
+        center_x, center_y = WINDOW_WIDTH//2, WINDOW_HEIGHT//2
+
+        self.save_button = Button(
+            position=(center_x - button_width//2, center_y - 70),
+            size=(button_width, button_height),
+            color=(200, 200, 200),
+            text="Сохранить",
+            font=pygame.font.SysFont('Arial', 28)
+        )
+
+    # Время
     def start_game_timer(self):
         """Запуск таймера"""
         self.game_start_time = pygame.time.get_ticks()
@@ -91,14 +105,7 @@ class Game:
             return (self.pause_start_time - self.game_start_time - self.paused_duration) // 1000
         return (current_time - self.game_start_time - self.paused_duration) // 1000
     
-    def draw_timer(self, screen):
-        """Orpucoaxa raймера в формате MM,SS"""
-        elapsed = self.view_time
-        time_text = f"{elapsed // 60:02d},{elapsed % 60:02d}"
-        font = pygame.font.SysFont("Arial", 36)
-        timer_surface = font.render(time_text, True, (0, 0, 0))
-        screen.blit(timer_surface, (10, 10))
-
+    # Мины
     def generate_mines(self, exclude_x, exclude_y):
         """Генерация мин с безопасной зоной"""
         # Сброс мин
@@ -140,6 +147,7 @@ class Game:
                             self.cells[y+dy][x+dx].is_mine))
                     self.cells[y][x].mine_around = count
 
+    # Обработка и проверка событий
     def handle_click(self, mouse_x, mouse_y, mouse_button):
         """Обработка всех кликов в игре"""
         # Проверка клика на кнопку паузы
@@ -280,6 +288,15 @@ class Game:
                     return False
         return True
 
+    # Отрисовка
+    def draw_timer(self, screen):
+        """Orpucoaxa raймера в формате MM,SS"""
+        elapsed = self.view_time
+        time_text = f"{elapsed // 60:02d},{elapsed % 60:02d}"
+        font = pygame.font.SysFont("Arial", 36)
+        timer_surface = font.render(time_text, True, (0, 0, 0))
+        screen.blit(timer_surface, (10, 10))
+
     def draw_pause_menu(self, screen):
         """Отрисовка меню паузы"""
         overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
@@ -296,15 +313,18 @@ class Game:
 
     def draw_message(self, screen, message):
         """Отрисовка сообщения о результате"""
+        # Фон
         overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
         overlay.fill((228, 194, 159, 200))
         screen.blit(overlay, (0, 0))
 
+        # Надпись большая
         font_small = pygame.font.SysFont("Arial", 72, bold=True)
         text = font_small.render(message, True, (0, 0, 0))
         text_rect = text.get_rect(center=(WINDOW_WIDTH//2, WINDOW_HEIGHT//2 - 50))
         screen.blit(text, text_rect)
-
+        
+        # Надпись малая
         font_small = pygame.font.SysFont("Arial", 36)
         text = font_small.render("Нажмите для продолжения", True, (0, 0, 0))
         text_rect = text.get_rect(center=(WINDOW_WIDTH//2, WINDOW_HEIGHT//2 + 50))
@@ -319,6 +339,26 @@ class Game:
         text = font.render(f"{mines_left}/{self.mines_count}", True, (0, 0, 0))
         text_rect = text.get_rect(center=(WINDOW_WIDTH//2, 30))
         screen.blit(text, text_rect)
+
+    def draw_won(self, screen):
+        # Фон
+        overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((228, 194, 159, 200))
+        screen.blit(overlay, (0, 0))
+
+        # Надпись большая
+        font_small = pygame.font.SysFont("Arial", 72, bold=True)
+        text = font_small.render("Победа", True, (0, 0, 0))
+        text_rect = text.get_rect(center=(WINDOW_WIDTH//2, WINDOW_HEIGHT//2 - 50))
+        screen.blit(text, text_rect)
+
+        # Поле ввода
+        input_rect = pygame.Rect(250, 250, 300, 50)
+        input_color = (128,128,128)
+        active = False
+        input_text = ''
+        font = pygame.font.Font(None, 32)
+
 
     def draw(self, screen):
         """Основной метод отрисовки"""

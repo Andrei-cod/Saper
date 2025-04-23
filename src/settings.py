@@ -29,14 +29,14 @@ class Settings:
         start_y = WINDOW_HEIGHT // 2 - len(self.size_options) * button_height // 2
         
         for i, option in enumerate(self.size_options):
-            btn = Button(
+            button = Button(
                 position=(WINDOW_WIDTH//2 - button_width//2, start_y + i*(button_height + 40)),
                 size=(button_width, button_height),
                 color=(200, 200, 200),
                 text=option["label"], 
                 font=pygame.font.SysFont("Arial", 28)
             )
-            self.buttons.append(btn)
+            self.buttons.append(button)
 
         # Кнопка "Назад"
         self.back_button = Button(
@@ -51,8 +51,8 @@ class Settings:
         """Обработка событий"""
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             # Проверка кнопок размера
-            for i, btn in enumerate(self.buttons):
-                if btn.rect.collidepoint(event.pos):
+            for i, button in enumerate(self.buttons):
+                if button.rect.collidepoint(event.pos):
                     self.size = self.size_options[i]["size"]
                     self.mines = self.size_options[i]["mines"]
             
@@ -60,12 +60,9 @@ class Settings:
             if self.back_button.rect.collidepoint(event.pos):
                 return "back"
 
-    def get_height(self):
-        return self.size[0]
-    def get_width(self):
-        return self.size[0]
-    def get_mines(self):
-        return self.mines 
+    def get_param(self):
+        """Возврат размеров и количества мин"""
+        return self.size[0],self.size[0],self.mines
 
     def draw(self, screen):
         """Отрисовка интерфейса"""
@@ -79,13 +76,13 @@ class Settings:
         screen.blit(title, title_rect)
         
         # Кнопки размеров
-        for i, btn in enumerate(self.buttons):
+        for i, button in enumerate(self.buttons):
             if self.size == self.size_options[i]["size"]:
-                btn.color = (100, 200, 100)  # Зеленый для выбранного
+                button.color = (100, 200, 100)  # Зеленый для выбранного
             else:
-                btn.color = (200, 200, 200)  # Серый для остальных
+                button.color = (200, 200, 200)  # Серый для остальных
                 
-            btn.draw(screen)
+            button.draw(screen)
             
             # Количество мин
             font_small = pygame.font.SysFont("Arial", 20)
@@ -95,7 +92,7 @@ class Settings:
                 (0, 0, 0)
             )
             mines_rect = mines_text.get_rect(
-                center=(btn.rect.centerx, btn.rect.bottom + 15)
+                center=(button.rect.centerx, button.rect.bottom + 15)
             )
             screen.blit(mines_text, mines_rect)
         

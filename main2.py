@@ -3,6 +3,7 @@ from src.menu import MainMenu
 from src.game2 import Game
 from src.constants import *
 from src.settings import Settings
+from src.liderboard import Ladder
 
 def main():
     # Инициализация pygame
@@ -11,14 +12,14 @@ def main():
     pygame.display.set_caption("Сапер")
     clock = pygame.time.Clock()
 
+
     # Состояния игры
-    current_screen = "menu"  # menu/game
+    current_screen = "menu"
     menu = MainMenu(WINDOW_WIDTH, WINDOW_HEIGHT)
     game = None
     sett = Settings()
-    width = sett.get_width()
-    height= sett.get_height()
-    mines = sett.get_mines()
+    ladder = Ladder()
+    width, height, mines = sett.get_param()
 
     running = True
     while running:
@@ -36,7 +37,7 @@ def main():
                     game = Game(width, height, mines)
                     current_screen = "game"
                     waiting_for_click = False
-                elif action == "Quit":
+                elif action == "Settings":
                     current_screen = "settings"
                 elif action == "Quit":
                     running = False
@@ -50,8 +51,19 @@ def main():
                         waiting_for_click = False
                     else:
                         result = game.handle_click(mouse_pos[0], mouse_pos[1], event.button)
-                        if result in ("game_over", "game_won"):
+                        if result == "game_won":
+                            #name, time = game.get_res()
+                            #ladder.write(name, time)
                             waiting_for_click = True
+                        elif result == "game_over":
+                            waiting_for_click = True
+
+
+            # Настройки
+            elif current_screen == "settings":
+                action = sett.handle_event(event)
+                if action == "back":
+                    current_screen = "menu"
 
         # Отрисовка
         screen.fill((228, 194, 159))  # Фон
@@ -63,11 +75,11 @@ def main():
                 game.update_timer()
             game.draw(screen)
         elif current_screen == "settings":
-            pass
+            sett.draw(screen)
             
 
         pygame.display.flip()
-        clock.tick(60)  # 60 FPS
+        clock.tick(60)
 
     pygame.quit()
 
