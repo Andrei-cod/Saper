@@ -15,6 +15,14 @@ class Button:
         self.color = color
         self.font = font
         self.rect = pygame.Rect(position, size)
+        self.border_be = False
+        self.border_rect = None
+        self.border_color = None
+
+    def add_border(self, width:int, color:tuple):
+        self.border_be = True
+        self.border_rect = pygame.Rect((self.position[0] - width, self.position[1] - width), (self.size[0] + 2 * width,self.size[1] + 2 * width))
+        self.border_color = color
 
     def draw(self, screen):
         """Отрисовка кнопки на экране `screen`.
@@ -22,6 +30,9 @@ class Button:
         Если есть текст (`self.text`), рисует текст в центре кнопки.
         """
         # Отрисовка прямоугольника кнопки
+    
+        if self.border_be:
+            pygame.draw.rect(screen,self.border_color,self.border_rect)
         pygame.draw.rect(screen, self.color, self.rect)
         
         if self.image:  # Если есть изображение

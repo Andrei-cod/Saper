@@ -34,6 +34,7 @@ class MainMenu:
                 color=(128, 128, 128),
                 font=self.font
             )
+            button.add_border(width=2,color=(102,102,102))
             self.buttons.append((action, button))
 
     def handle_event(self, event):
@@ -52,11 +53,10 @@ class MainMenu:
         
         # Загрузка и отрисовка логотипа
         try:
-            image = pygame.image.load("assets/pngwing.png").convert_alpha()
+            image = pygame.image.load("assets/САПЕР ЛОГО.png").convert_alpha()
             image_rect = image.get_rect(center=(self.screen_width // 2, self.screen_height // 3.5))
             screen.blit(image, image_rect)
         except:
-            print("Ошибка загрузки изображения логотипа")
             # Можно добавить заглушку текстом
             title_surface = self.font.render("Сапер", True, (255, 255, 255))
             title_rect = title_surface.get_rect(center=(self.screen_width // 2, self.screen_height // 4))

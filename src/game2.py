@@ -23,9 +23,10 @@ class Game:
         self.paused_duration = 0
         self.view_time = 0
         self.time_stop = True
+        self.res_time = 0
 
         # Позиционирование поля
-        self.start_x = WINDOW_WIDTH//CELL_SIZE//2 - self.width//2
+        self.start_x = WINDOW_WIDTH//CELL_SIZE//2 - self.width//2 
         self.start_y = WINDOW_HEIGHT//CELL_SIZE//2 - self.height//2
 
         self.init_cells()
@@ -35,31 +36,33 @@ class Game:
     def init_cells(self):
         """Создание сетки клеток"""
         self.cells = [
-            [Cell(self.start_x + x, self.start_y + y, CELL_SIZE)
+            [Cell(self.start_x + x, self.start_y + y+1, CELL_SIZE)
              for x in range(self.width)]
             for y in range(self.height)
         ]
 
     def init_pause_ui(self):
         """Инициализация UI паузы"""
-        button_width, button_height = 200, 50
+        button_width, button_height = 250, 70
         center_x, center_y = WINDOW_WIDTH//2, WINDOW_HEIGHT//2
 
         self.continue_button = Button(
             position=(center_x - button_width//2, center_y - 70),
-            size=(button_width, button_height),
-            color=(200, 200, 200),
+            size=(button_width-2, button_height-2),
+            color=(34, 139, 34),
             text="Продолжить",
             font=pygame.font.SysFont('Arial', 28)
         )
+        self.continue_button.add_border(width=2,color=(24,99,24))
 
         self.menu_button = Button(
             position=(center_x - button_width//2, center_y + 20),
             size=(button_width, button_height),
-            color=(200, 200, 200),
+            color=(204, 27, 0),
             text="Выход в меню",
             font=pygame.font.SysFont("Arial", 28)
         )
+        self.menu_button.add_border(width=2,color=(153,20,0))
 
     def init_won_ui(self):
         button_width, button_height = 200, 50
@@ -171,7 +174,7 @@ class Game:
             return None
         
         x = (mouse_x - self.start_x * CELL_SIZE) // CELL_SIZE
-        y = (mouse_y - self.start_y * CELL_SIZE) // CELL_SIZE
+        y = (mouse_y - self.start_y * CELL_SIZE) // CELL_SIZE - 1
 
         if not (0 <= x < self.width and 0 <= y < self.height):
             return None
@@ -195,11 +198,6 @@ class Game:
                     self.time_stop = True
                     return "game_over"
                 self.open_cell(x, y)
-                if self.check_win():
-                    self.game_won = True
-                    self.flag_all_mines()
-                    self.time_stop = True
-                    return "game_won"
             elif cell.state == "opened" and cell.mine_around > 0:
                 if not self.open_surrounding(x, y):
                     self.game_over = True
@@ -211,12 +209,14 @@ class Game:
                 cell.state = "flagged"
             elif cell.state == "flagged":
                 cell.state = "closed"
-            # Проверка победы после изменения флага
-            if self.check_win():
-                self.game_won = True
-                self.flag_all_mines()
-                self.time_stop = True
-                return "game_won"
+        
+        # Проверка победы
+        if self.check_win():
+            self.game_won = True
+            self.flag_all_mines()
+            self.time_stop = True
+            self.res_time = self.get_elapsed_time()
+            return "game_won"
 
         return None
 
@@ -288,6 +288,9 @@ class Game:
                     return False
         return True
 
+    def get_res(self):
+        return self.res_time
+
     # Отрисовка
     def draw_timer(self, screen):
         """Orpucoaxa raймера в формате MM,SS"""
@@ -347,17 +350,45 @@ class Game:
         screen.blit(overlay, (0, 0))
 
         # Надпись большая
-        font_small = pygame.font.SysFont("Arial", 72, bold=True)
-        text = font_small.render("Победа", True, (0, 0, 0))
-        text_rect = text.get_rect(center=(WINDOW_WIDTH//2, WINDOW_HEIGHT//2 - 50))
+        font_large = pygame.font.SysFont("Arial", 72, bold=True)
+        text = font_large.render("Победа", True, (0, 0, 0))
+        text_rect = text.get_rect(center=(WINDOW_WIDTH//2, WINDOW_HEIGHT//2 - 100))
         screen.blit(text, text_rect)
 
         # Поле ввода
-        input_rect = pygame.Rect(250, 250, 300, 50)
-        input_color = (128,128,128)
-        active = False
-        input_text = ''
-        font = pygame.font.Font(None, 32)
+        input_rect = pygame.Rect(
+            WINDOW_WIDTH//2 - 150,  # Центрирование по горизонтали
+            WINDOW_HEIGHT//2,       # По вертикали под надписью
+            300, 50
+        )
+        
+        # Цвет рамки (серый/синий если активно)
+        input_color = (100, 200, 255) if self.input_active else (128, 128, 128)
+        
+        # Отрисовка поля ввода
+        pygame.draw.rect(screen, input_color, input_rect, 2)
+        pygame.draw.rect(screen, (228, 194, 159), input_rect)  # Белый фон
+        
+        # Текст в поле ввода
+        font_input = pygame.font.SysFont("Arial", 32)
+        text_surface = font_input.render(self.input_text, True, (0, 0, 0))
+        screen.blit(text_surface, (input_rect.x + 10, input_rect.y + 10))
+        
+        # Подсказка
+        font_small = pygame.font.SysFont("Arial", 24)
+        hint = font_small.render("Введите ваше имя:", True, (0, 0, 0))
+        screen.blit(hint, (input_rect.x, input_rect.y - 30))
+        
+        # Кнопка подтверждения
+        submit_rect = pygame.Rect(
+            WINDOW_WIDTH//2 - 75,
+            WINDOW_HEIGHT//2 + 70,
+            150, 40
+        )
+        pygame.draw.rect(screen, (100, 200, 100), submit_rect)
+        submit_text = font_small.render("Сохранить", True, (0, 0, 0))
+        screen.blit(submit_text, (submit_rect.x + 25, submit_rect.y + 10))
+        
 
 
     def draw(self, screen):
@@ -371,16 +402,14 @@ class Game:
         self.draw_timer(screen)
         self.draw_mines_counter(screen)
 
-        # Кнопка паузы
+       
         # Кнопка паузы
         pause_button = Button(
-            position=(WINDOW_WIDTH-40-2, 2),
-            size=(40, 40),
+            position=(WINDOW_WIDTH-50-2, 2),
+            size=(50, 50),
             color=(228, 194, 159),
             image=pygame.image.load("assets/pause.png")
         )
-        border = pygame.Rect(WINDOW_WIDTH-44, 0, 44, 44)
-        pygame.draw.rect(screen, (128, 128, 128), border)
         pause_button.draw(screen)
 
         # Отрисовка состояний

@@ -15,7 +15,7 @@ class Settings:
         self.size_options = [
             {"label": "15×15", "size": (15, 15), "mines": 20},
             {"label": "20×20", "size": (20, 20), "mines": 50}, 
-            {"label": "25×25", "size": (25, 25), "mines": 99}
+            {"label": "25×25", "size": (25, 25), "mines": 140}
         ]
         
         self.buttons = []
